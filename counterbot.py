@@ -4,18 +4,11 @@ import re
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message
-
-# Токен берем из переменных окружения Railway (вкладка Variables -> BOT_TOKEN)
-# Если переменная не найдена, используется твой токен по умолчанию
 TOKEN = os.getenv("BOT_TOKEN", "8606148076:AAFfNfFKAjq2YO6troH0Y70XxSWpI_O0Grk")
-
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
-
 ALLOWED_USERS = [7303857790, 794610762]
 user_totals = {}
-
-
 def extract_amount(text):
     if not text:
         return None
@@ -31,7 +24,6 @@ def extract_amount(text):
     for word in bad_words:
         if word in text_lower:
             return "error_status"
-
     patterns = [
         r"сумма:\s*([\d\s,.]+)",
         r"summasi:\s*([\d\s,.]+)",
@@ -53,24 +45,18 @@ def extract_amount(text):
             except ValueError:
                 continue
     return None
-
-
 def format_number(num):
     """Красиво форматирует число: 300 000 вместо 300000.00"""
     if num % 1 == 0:
         return f"{int(num):,}".replace(",", " ")
     else:
         return f"{num:,.2f}".replace(",", " ").replace(".", ",")
-
-
-# 1. Изменен декоратор команды на Command("total")
 @dp.message(Command("total"))
 async def total(message: Message):
     user_id = message.from_user.id
     if user_id not in ALLOWED_USERS:
         await message.answer("7303857790")
         return
-
     total_sum = user_totals.get(user_id, 0)
     if total_sum > 0:
         formatted = format_number(total_sum)
@@ -80,36 +66,24 @@ async def total(message: Message):
         user_totals[user_id] = 0
     else:
         await message.answer("Сумма пока равна 0.")
-
-
-# 2. Изменен универсальный хэндлер сообщений
 @dp.message()
 async def handle_message(message: Message):
     if message.text and message.text.startswith("/"):
         return
-
     user_id = message.from_user.id
     if user_id not in ALLOWED_USERS:
         await message.answer(" ")
         return
-
     result = extract_amount(message.text)
     if result == "error_status":
         await message.answer("Не удалось извлечь сумму")
         return
-
     if result is not None:
         user_totals[user_id] = user_totals.get(user_id, 0) + result
         await message.answer(format_number(result))
-
-
-# 3. Асинхронная точка входа вместо executor
 async def main():
     print("Бот запущен. Считаю только успешные чеки для белого списка.")
-    # Удаляем вебхуки и задерживаем старые апдейты перед стартом
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
-
-
 if __name__ == "__main__":
     asyncio.run(main())
