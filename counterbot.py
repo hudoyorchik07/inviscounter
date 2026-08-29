@@ -46,7 +46,6 @@ def extract_amount(text):
                 continue
     return None
 def format_number(num):
-    """Красиво форматирует число: 300 000 вместо 300000.00"""
     if num % 1 == 0:
         return f"{int(num):,}".replace(",", " ")
     else:
